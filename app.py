@@ -1,71 +1,89 @@
-import os
-import json
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, render_template, request, redirect, url_for
+from datetime import datetime, date
 
 app = Flask(__name__)
 
-DATA_FILE = "tasks.json"
-tasks = []
-next_id = 1
+# Хранилище задач: список словарей
+tasks = [
+    {'id': 1, 'task': 'Купить продукты', 'priority': 'Средний', 'deadline': '2026-03-15', 'done': False},
+    {'id': 2, 'task': 'Сдать отчет', 'priority': 'Высокий', 'deadline': '2026-03-12', 'done': False},
+    {'id': 3, 'task': 'Полить цветы', 'priority': 'Низкий', 'deadline': '2026-03-18', 'done': True},
+]
+next_id = 4
 
-def load_tasks():
-    global tasks, next_id
-    try:
-        with open(DATA_FILE, "r") as f:
-            tasks = json.load(f)
-            if tasks:
-                next_id = max(task["id"] for task in tasks) + 1
-    except FileNotFoundError:
-        tasks = []
+# Конфигурация приоритетов для сортировки
+PRIORITY_ORDER = {'Высокий': 1, 'Средний': 2, 'Низкий': 3}
 
-def save_tasks():
-    with open(DATA_FILE, "w") as f:
-        json.dump(tasks, f)
+def sort_tasks(task_list, sort_by):
+    """Функция для сортировки задач по заданному критерию."""
+    if sort_by == 'priority':
+        # Сортируем по приоритету, используя словарь PRIORITY_ORDER
+        return sorted(task_list, key=lambda x: PRIORITY_ORDER.get(x['priority'], 4))
+    elif sort_by == 'deadline':
+        # Сортируем по сроку. Задачи без срока отправляем в конец.
+        return sorted(task_list, key=lambda x: x['deadline'] if x['deadline'] else '9999-99-99')
+    else:
+        # По умолчанию сортируем по ID (как добавлены)
+        return sorted(task_list, key=lambda x: x['id'])
 
-load_tasks()
-
-# ----------------- REST API -----------------
-@app.route("/tasks", methods=["GET"])
-def get_tasks():
-    return jsonify(tasks)
-
-@app.route("/tasks", methods=["POST"])
-def add_task():
+@app.route('/', methods=['GET', 'POST'])
+def index():
     global next_id
-    data = request.get_json()
-    if not data or "title" not in data or not data["title"].strip():
-        return jsonify({"error": "Title is required"}), 400
-    task = {"id": next_id, "title": data["title"].strip(), "completed": False}
-    tasks.append(task)
-    next_id += 1
-    save_tasks()
-    return jsonify(task), 201
+    today = date.today().isoformat()
 
-@app.route("/tasks/<int:task_id>", methods=["PUT"])
-def update_task(task_id):
+    if request.method == 'POST':
+        # Добавление новой задачи
+        task_text = request.form.get('task')
+        priority = request.form.get('priority', 'Средний')
+        deadline = request.form.get('deadline')
+        if task_text:
+            new_task = {
+                'id': next_id,
+                'task': task_text,
+                'priority': priority,
+                'deadline': deadline if deadline else None,
+                'done': False
+            }
+            tasks.append(new_task)
+            next_id += 1
+        return redirect(url_for('index'))
+
+    # Получаем параметр сортировки из URL (например, ?sort=priority)
+    sort_by = request.args.get('sort', 'default')
+
+    # Получаем поисковый запрос
+    search_query = request.args.get('search', '').lower()
+
+    # Фильтруем задачи по поиску, если есть запрос
+    displayed_tasks = tasks
+    if search_query:
+        displayed_tasks = [t for t in tasks if search_query in t['task'].lower()]
+
+    # Сортируем отфильтрованный список
+    sorted_tasks = sort_tasks(displayed_tasks, sort_by)
+
+    return render_template('index.html',
+                           tasks=sorted_tasks,
+                           today=today,
+                           sort_by=sort_by,
+                           search_query=search_query)
+
+@app.route('/done/<int:task_id>')
+def toggle_done(task_id):
+    """Отметить задачу как выполненную/невыполненную."""
     for task in tasks:
-        if task["id"] == task_id:
-            task["completed"] = not task["completed"]
-            save_tasks()
-            return jsonify(task)
-    return jsonify({"error": "Task not found"}), 404
+        if task['id'] == task_id:
+            task['done'] = not task['done']
+            break
+    # Возвращаемся на ту же страницу с сохранением параметров сортировки
+    return redirect(request.referrer or url_for('index'))
 
-@app.route("/tasks/<int:task_id>", methods=["DELETE"])
+@app.route('/delete/<int:task_id>')
 def delete_task(task_id):
+    """Удалить задачу."""
     global tasks
-    new_tasks = [t for t in tasks if t["id"] != task_id]
-    if len(new_tasks) == len(tasks):
-        return jsonify({"error": "Task not found"}), 404
-    tasks = new_tasks
-    save_tasks()
-    return jsonify({"message": "Deleted"})
+    tasks = [task for task in tasks if task['id'] != task_id]
+    return redirect(request.referrer or url_for('index'))
 
-# ----------------- Frontend -----------------
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-# ----------------- Run -----------------
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    app.run(debug=True)

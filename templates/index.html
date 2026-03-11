@@ -1,56 +1,432 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Mini Task Manager</title>
-<style>
-body { font-family: Arial; margin: 40px; }
-.completed { text-decoration: line-through; color: gray; }
-button { margin-left: 5px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Task Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f4f7fb;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .task-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .task-form input[type="text"] {
+            flex: 1 1 200px;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .task-form input[type="text"]:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        .task-form select, .task-form input[type="date"] {
+            padding: 0.75rem 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            background: white;
+            font-size: 1rem;
+            color: #2c3e50;
+            cursor: pointer;
+        }
+
+        .task-form button {
+            padding: 0.75rem 1.5rem;
+            background: #6366f1;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .task-form button:hover {
+            background: #4f52e0;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1rem 0;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .sort-section {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .sort-section span {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .sort-btn {
+            padding: 0.4rem 1rem;
+            background: #f4f7fb;
+            border-radius: 20px;
+            color: #2c3e50;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .sort-btn:hover, .sort-btn.active {
+            background: #6366f1;
+            color: white;
+        }
+
+        .search-section form {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .search-section input[type="text"] {
+            padding: 0.4rem 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .search-section button {
+            padding: 0.4rem 1rem;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .task-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: #f4f7fb;
+            border-radius: 16px;
+            transition: transform 0.2s;
+        }
+
+        .task-item:hover {
+            transform: translateY(-2px);
+        }
+
+        .task-item.completed {
+            opacity: 0.7;
+            background: #f1f5f9;
+        }
+
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+            color: #94a3b8;
+        }
+
+        .task-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .task-checkbox {
+            width: 1.2rem;
+            height: 1.2rem;
+            cursor: pointer;
+            accent-color: #6366f1;
+        }
+
+        .task-text {
+            font-size: 1rem;
+            color: #2c3e50;
+            word-break: break-word;
+            flex: 1 1 200px;
+        }
+
+        .task-priority {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: white;
+        }
+
+        .priority-высокий {
+            background: #ef4444;
+        }
+        .priority-средний {
+            background: #f59e0b;
+        }
+        .priority-низкий {
+            background: #10b981;
+        }
+
+        .task-deadline {
+            font-size: 0.9rem;
+            color: #6c757d;
+            background: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .task-deadline.overdue {
+            background: #fee2e2;
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .delete-btn {
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #6c757d;
+            font-size: 1.1rem;
+            padding: 2rem;
+        }
+    </style>
 </head>
 <body>
-<h1>Mini Task Manager</h1>
-<input id="new-task" placeholder="New task">
-<button onclick="addTask()">Add</button>
-<ul id="task-list"></ul>
+    <div class="container">
+        <h1>📋 Мои задачи</h1>
 
-<script>
-async function fetchTasks() {
-    const res = await fetch('/tasks');
-    const tasks = await res.json();
-    const list = document.getElementById('task-list');
-    list.innerHTML = '';
-    tasks.forEach(task => {
-        const li = document.createElement('li');
-        li.textContent = task.title;
-        if(task.completed) li.classList.add('completed');
-        li.onclick = async () => { await toggleTask(task.id); fetchTasks(); };
-        const del = document.createElement('button');
-        del.textContent = 'Delete';
-        del.onclick = async (e) => { e.stopPropagation(); await deleteTask(task.id); fetchTasks(); };
-        li.appendChild(del);
-        list.appendChild(li);
-    });
-}
+        <!-- Форма добавления задачи -->
+        <div class="task-form">
+            <input type="text" id="new-task" placeholder="Что нужно сделать?" required>
+            <select id="priority">
+                <option value="Низкий">Низкий приоритет</option>
+                <option value="Средний" selected>Средний приоритет</option>
+                <option value="Высокий">Высокий приоритет</option>
+            </select>
+            <input type="date" id="deadline">
+            <button onclick="addTask()">➕ Добавить</button>
+        </div>
 
-async function addTask() {
-    const input = document.getElementById('new-task');
-    if(!input.value.trim()) return;
-    await fetch('/tasks', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title: input.value}) });
-    input.value = '';
-    fetchTasks();
-}
+        <!-- Панель управления: сортировка и поиск -->
+        <div class="control-panel">
+            <div class="sort-section">
+                <span>Сортировать по:</span>
+                <button class="sort-btn active" onclick="sortTasks('default')">Добавлению</button>
+                <button class="sort-btn" onclick="sortTasks('priority')">Приоритету</button>
+                <button class="sort-btn" onclick="sortTasks('deadline')">Сроку</button>
+            </div>
+            <div class="search-section">
+                <input type="text" id="search-input" placeholder="🔍 Поиск задач...">
+                <button onclick="searchTasks()">Найти</button>
+            </div>
+        </div>
 
-async function toggleTask(id) {
-    await fetch(`/tasks/${id}`, { method: 'PUT' });
-}
+        <!-- Список задач -->
+        <ul id="task-list" class="task-list"></ul>
+    </div>
 
-async function deleteTask(id) {
-    await fetch(`/tasks/${id}`, { method: 'DELETE' });
-}
+    <script>
+        let allTasks = [];
+        let currentSort = 'default';
+        let currentSearch = '';
 
-fetchTasks();
-</script>
+        // Приоритеты для сортировки
+        const priorityOrder = {'Высокий': 1, 'Средний': 2, 'Низкий': 3};
+
+        async function fetchTasks() {
+            const res = await fetch('/tasks');
+            allTasks = await res.json();
+            displayTasks();
+        }
+
+        function displayTasks() {
+            let tasksToShow = [...allTasks];
+            
+            // Фильтрация по поиску
+            if (currentSearch) {
+                tasksToShow = tasksToShow.filter(task => 
+                    task.title.toLowerCase().includes(currentSearch.toLowerCase())
+                );
+            }
+            
+            // Сортировка
+            if (currentSort === 'priority') {
+                tasksToShow.sort((a, b) => 
+                    (priorityOrder[a.priority] || 4) - (priorityOrder[b.priority] || 4)
+                );
+            } else if (currentSort === 'deadline') {
+                tasksToShow.sort((a, b) => {
+                    if (!a.deadline) return 1;
+                    if (!b.deadline) return -1;
+                    return a.deadline.localeCompare(b.deadline);
+                });
+            } else {
+                tasksToShow.sort((a, b) => a.id - b.id);
+            }
+
+            const list = document.getElementById('task-list');
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (tasksToShow.length === 0) {
+                list.innerHTML = '<p class="empty-message">✨ Задач пока нет. Самое время добавить что-то важное!</p>';
+                return;
+            }
+
+            list.innerHTML = tasksToShow.map(task => {
+                const isOverdue = !task.completed && task.deadline && task.deadline < today;
+                const priorityClass = task.priority ? `priority-${task.priority.toLowerCase()}` : 'priority-средний';
+                
+                return `
+                    <li class="task-item ${task.completed ? 'completed' : ''}">
+                        <div class="task-content">
+                            <input type="checkbox" class="task-checkbox" 
+                                ${task.completed ? 'checked' : ''} 
+                                onclick="toggleTask(${task.id})">
+                            <span class="task-text">${task.title}</span>
+                            <span class="task-priority ${priorityClass}">${task.priority || 'Средний'}</span>
+                            <span class="task-deadline ${isOverdue ? 'overdue' : ''}">
+                                📅 ${task.deadline || '—'}
+                            </span>
+                        </div>
+                        <button class="delete-btn" onclick="deleteTask(${task.id})">🗑️</button>
+                    </li>
+                `;
+            }).join('');
+        }
+
+        async function addTask() {
+            const input = document.getElementById('new-task');
+            const priority = document.getElementById('priority').value;
+            const deadline = document.getElementById('deadline').value;
+            
+            if(!input.value.trim()) return;
+            
+            await fetch('/tasks', { 
+                method: 'POST', 
+                headers: {'Content-Type': 'application/json'}, 
+                body: JSON.stringify({
+                    title: input.value,
+                    priority: priority,
+                    deadline: deadline || null
+                }) 
+            });
+            
+            input.value = '';
+            document.getElementById('deadline').value = '';
+            fetchTasks();
+        }
+
+        async function toggleTask(id) {
+            await fetch(`/tasks/${id}`, { method: 'PUT' });
+            fetchTasks();
+        }
+
+        async function deleteTask(id) {
+            if (!confirm('Удалить задачу?')) return;
+            await fetch(`/tasks/${id}`, { method: 'DELETE' });
+            fetchTasks();
+        }
+
+        function sortTasks(type) {
+            currentSort = type;
+            // Обновляем активную кнопку
+            document.querySelectorAll('.sort-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            displayTasks();
+        }
+
+        function searchTasks() {
+            currentSearch = document.getElementById('search-input').value;
+            displayTasks();
+        }
+
+        // Добавляем поиск по нажатию Enter
+        document.getElementById('search-input').addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                searchTasks();
+            }
+        });
+
+        // Загружаем задачи при старте
+        fetchTasks();
+    </script>
 </body>
 </html>
